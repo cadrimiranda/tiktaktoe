@@ -1,23 +1,72 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import { useEffect, useState } from "react";
+import styled from "styled-components";
 import styles from "../styles/Home.module.css";
 
-enum player {
+enum offlinePlayer {
+  x = "X",
+  o = "O",
+}
+
+enum playerValue {
   x = "X",
   o = "O",
   empty = "empty",
 }
 
+const Table = styled.table`
+  border-collapse: collapse;
+
+  tr {
+    border-bottom: 1px solid red;
+    &:last-child {
+      border-bottom: none;
+    }
+
+    td {
+      border-right: 1px solid red;
+
+      &:last-child {
+        border-right: none;
+      }
+
+      button {
+        appearance: none;
+        border: none;
+        background-color: transparent;
+      }
+    }
+
+    td,
+    button {
+      width: 50px;
+      height: 50px;
+    }
+  }
+`;
+
 const Home: NextPage = () => {
-  const [board, setBoard] = useState<player[][]>([
-    [player.empty, player.empty, player.empty],
-    [player.empty, player.empty, player.empty],
-    [player.empty, player.empty, player.empty],
+  const [player, setPlayer] = useState<offlinePlayer>(offlinePlayer.x);
+  const [board, setBoard] = useState<playerValue[][]>([
+    [playerValue.empty, playerValue.empty, playerValue.empty],
+    [playerValue.empty, playerValue.empty, playerValue.empty],
+    [playerValue.empty, playerValue.empty, playerValue.empty],
   ]);
 
-  const renderCell = (cell: player) => {
-    if (cell === player.empty) {
+  const handleClickCell = (lineIndex: number, cellIndex: number) => () => {
+    const [value, newPlayer] =
+      player === offlinePlayer.x
+        ? [playerValue.x, offlinePlayer.o]
+        : [playerValue.o, offlinePlayer.x];
+    const _board = board.slice();
+    _board[lineIndex][cellIndex] = value;
+    setBoard(_board);
+    setPlayer(newPlayer);
+  };
+
+  const renderCell = (cell: playerValue) => {
+    if (cell === playerValue.empty) {
       return "";
     }
 
@@ -26,17 +75,21 @@ const Home: NextPage = () => {
 
   const renderBoard = () => {
     return (
-      <table>
-        {board.map((line) => {
+      <Table>
+        {board.map((line, lineIndex) => {
           return (
             <tr>
-              {line.map((cell) => (
-                <td>{renderCell(cell)}</td>
+              {line.map((cell, cellIndex) => (
+                <td>
+                  <button onClick={handleClickCell(lineIndex, cellIndex)}>
+                    {renderCell(cell)}
+                  </button>
+                </td>
               ))}
             </tr>
           );
         })}
-      </table>
+      </Table>
     );
   };
 
@@ -48,10 +101,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className={styles.main}>
-        {renderBoard()}
-        tiktaktoe
-      </main>
+      <main className={styles.main}>{renderBoard()}</main>
     </div>
   );
 };
