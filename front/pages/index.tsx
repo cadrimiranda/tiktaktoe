@@ -1,19 +1,14 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import styled from "styled-components";
+import {
+  offlinePlayer,
+  playerValue,
+  THandleClickCellCallback,
+  useBoard,
+} from "../hooks/useBoard";
 import styles from "../styles/Home.module.css";
-
-enum offlinePlayer {
-  x = "X",
-  o = "O",
-}
-
-enum playerValue {
-  x = "X",
-  o = "O",
-  empty = "empty",
-}
 
 const Table = styled.table`
   border-collapse: collapse;
@@ -46,90 +41,9 @@ const Table = styled.table`
   }
 `;
 
-type TBoard = playerValue[][];
-
 const Home: NextPage = () => {
   const [player, setPlayer] = useState<offlinePlayer>(offlinePlayer.x);
-  const [board, setBoard] = useState<TBoard>([]);
-
-  useEffect(() => {
-    setBoard(createBoard);
-  }, []);
-
-  const createBoard = () => [
-    [playerValue.empty, playerValue.empty, playerValue.empty],
-    [playerValue.empty, playerValue.empty, playerValue.empty],
-    [playerValue.empty, playerValue.empty, playerValue.empty],
-  ];
-
-  const verifyWinnerInAxis = (_board: TBoard, playerToVerify: playerValue) => {
-    const [[x1], [, middle], [, , x2]] = _board;
-    const [[, , y1], [], [y2]] = _board;
-
-    if (
-      x1 === playerToVerify &&
-      middle === playerToVerify &&
-      x2 === playerToVerify
-    ) {
-      return true;
-    }
-
-    return (
-      y1 === playerToVerify &&
-      middle === playerToVerify &&
-      y2 === playerToVerify
-    );
-  };
-
-  const verifyWinnerByLine =
-    (playerToVerify: playerValue) => (line: playerValue[]) => {
-      return line.every((cellValue) => cellValue === playerToVerify);
-    };
-
-  const getBoardColumn = (_board: TBoard, column: number) =>
-    _board.map((value) => value[column]);
-
-  const verifyWinnerByColumn = (
-    playerToVerify: playerValue,
-    column: playerValue[]
-  ) => {
-    return column.every((cellValue) => cellValue === playerToVerify);
-  };
-
-  const itHasWinner = (_board: TBoard, playerToVerify: playerValue) => {
-    if (_board.some(verifyWinnerByLine(playerToVerify))) {
-      return true;
-    }
-
-    if (
-      _board.some((_, index) =>
-        verifyWinnerByColumn(playerToVerify, getBoardColumn(_board, index))
-      )
-    ) {
-      return true;
-    }
-
-    return verifyWinnerInAxis(_board, playerToVerify);
-  };
-
-  const handleClickCell = (lineIndex: number, cellIndex: number) => () => {
-    if (board[lineIndex][cellIndex] !== playerValue.empty) {
-      return;
-    }
-
-    const [value, newPlayer] =
-      player === offlinePlayer.x
-        ? [playerValue.x, offlinePlayer.o]
-        : [playerValue.o, offlinePlayer.x];
-    const _board = board.slice();
-    _board[lineIndex][cellIndex] = value;
-    setBoard(_board);
-    if (itHasWinner(_board, value)) {
-      alert(`Player ${player} ganhou =)`);
-      setBoard(createBoard);
-    }
-    setPlayer(newPlayer);
-  };
+  const { board, handleClickCell } = useBoard();
 
   const renderCell = (cell: playerValue) => {
     if (cell === playerValue.empty) {
@@ -137,6 +51,25 @@ const Home: NextPage = () => {
     }
 
     return cell;
+  };
+
+  const handleClickCellCallback = ({
+    endGame,
+    win,
+  }: THandleClickCellCallback) => {
+    if (win) {
+      alert(`Player ${player} venceu`);
+    }
+
+    if (endGame) {
+      alert("Empate");
+    }
+
+    let _player = offlinePlayer.x;
+    if (player === offlinePlayer.x) {
+      _player = offlinePlayer.o;
+    }
+    setPlayer(_player);
   };
 
   const renderBoard = () => {
@@ -147,7 +80,16 @@ const Home: NextPage = () => {
             <tr key={lineIndex}>
               {line.map((cell, cellIndex) => (
                 <td key={`${cell}-${cellIndex}-${lineIndex}`}>
-                  <button onClick={handleClickCell(lineIndex, cellIndex)}>
+                  <button
+                    onClick={() =>
+                      handleClickCell({
+                        lineIndex,
+                        cellIndex,
+                        player,
+                        callBack: handleClickCellCallback,
+                      })
+                    }
+                  >
                     {renderCell(cell)}
                   </button>
                 </td>
